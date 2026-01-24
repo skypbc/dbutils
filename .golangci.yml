@@ -1,0 +1,24 @@
+version: "2"
+
+issues:
+  # Maximum issues count per one linter. Set to 0 to disable. Default is 50.
+  max-issues-per-linter: 50
+  # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
+  max-same-issues: 5
+
+  exclide-dirs:
+    - tmp
+
+linters:
+  #disable:
+  #  - errcheck
+    
+  exclusions:
+    rules:
+      - linters:
+          - staticcheck
+        text: "QF1003:" # could use tagged switch on xxx
+  
+      - linters:
+          - staticcheck
+        text: "QF1008:" # could remove embedded field "xxx" from selector
