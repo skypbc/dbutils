@@ -4,8 +4,8 @@ go 1.24.4
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/skypbc/dbx v0.0.0-20260124100441-bee8f9e4fb48
-	github.com/skypbc/goutils v0.0.0-20260124094408-a60782fbc9bb
+	github.com/skypbc/dbx v0.1.0
+	github.com/skypbc/goutils v0.1.0
 )
 
 require (
