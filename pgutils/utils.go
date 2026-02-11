@@ -3,14 +3,32 @@ package pgutils
 import (
 	"context"
 	"database/sql"
+	"strings"
+
 	"github.com/skypbc/dbx"
 	"github.com/skypbc/goutils/gerrors"
 	"github.com/skypbc/goutils/gfmt"
-	"strings"
+	"github.com/skypbc/goutils/gslice"
 )
 
-func DropAllTable(ctx context.Context, db dbx.IDB, schemas ...string) error {
-	query := `SELECT 'DROP TABLE IF EXISTS "' || tablename || '" CASCADE;' FROM pg_tables WHERE schemaname=?;`
+type DropAllTableOpts struct {
+	SkipTables []string
+	Schemas    []string
+}
+
+func DropAllTable(ctx context.Context, db dbx.IDB, opts ...DropAllTableOpts) error {
+	schemas := []string{}
+	skipTables := []string{}
+
+	if len(opts) > 0 {
+		o := opts[0]
+		if len(o.Schemas) > 0 {
+			schemas = o.Schemas
+		}
+		if len(o.SkipTables) > 0 {
+			skipTables = o.SkipTables
+		}
+	}
 
 	if len(schemas) == 0 {
 		schemas = append(schemas, "public")
@@ -18,10 +36,28 @@ func DropAllTable(ctx context.Context, db dbx.IDB, schemas ...string) error {
 
 	var tables []string
 	for _, schema := range schemas {
-		data := []any{schema}
-		db.Query(ctx, query, data, func(rows *sql.Rows) (err error) { //nolint:errcheck
-			var table string
+		query := gfmt.Sprintf(`
+		SELECT 
+			'DROP TABLE IF EXISTS "' || tablename || '" CASCADE;' 
+		FROM 
+			pg_tables 
+		WHERE 
+			schemaname=%s
+		`,
+			db.Escape(schema),
+		)
 
+		if len(skipTables) > 0 {
+			query += gfmt.Sprintf(
+				` AND tablename NOT IN (%s)`,
+				strings.Join(gslice.Convert(skipTables, func(i int) string {
+					return db.Escape(skipTables[i])
+				}), ","),
+			)
+		}
+
+		db.Query(ctx, query, nil, func(rows *sql.Rows) (err error) { //nolint:errcheck
+			var table string
 			for rows.Next() {
 				err := rows.Scan(&table)
 				if err != nil {
